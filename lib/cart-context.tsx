@@ -11,7 +11,9 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   total: number
+  totalAmount: number
   itemCount: number
+  getCartItemsWithProduct: (products: Product[]) => Array<CartItem & { product: Product }>
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -74,8 +76,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const total = items.reduce((sum, item) => sum + item.quantity, 0)
   const itemCount = items.length
 
+  // This requires products array to calculate, will be done in components
+  const totalAmount = 0
+
+  const getCartItemsWithProduct = (products: Product[]) => {
+    return items
+      .map((item) => {
+        const product = products.find((p) => p.id === item.productId)
+        return product ? { ...item, product } : null
+      })
+      .filter((item): item is CartItem & { product: Product } => item !== null)
+  }
+
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount }}>
+    <CartContext.Provider
+      value={{ items, addItem, removeItem, updateQuantity, clearCart, total, totalAmount, itemCount, getCartItemsWithProduct }}
+    >
       {children}
     </CartContext.Provider>
   )

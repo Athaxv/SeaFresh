@@ -3,18 +3,44 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
-import { ShoppingCart, Heart } from "lucide-react"
+import { ShoppingCart, Heart, Plus } from "lucide-react"
 import type { Product } from "@/lib/types"
 import { formatPrice } from "@/lib/utils"
+import { useCart } from "@/lib/cart-context"
+import { toast } from "sonner"
 
 interface ProductCardProps {
   product: Product
-  onAddToCart: (product: Product) => void
+  onAddToCart?: (product: Product) => void
 }
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
+  const { addItem } = useCart()
   const discountedPrice = product.discount ? Math.round(product.price * (1 - product.discount / 100)) : product.price
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (isAdding) return
+    
+    setIsAdding(true)
+    
+    // Call custom handler if provided, otherwise use context
+    if (onAddToCart) {
+      onAddToCart(product)
+    } else {
+      addItem(product, 1)
+    }
+    
+    toast.success(`${product.name} added to cart!`, {
+      description: "Browse more or checkout now",
+    })
+    
+    setTimeout(() => setIsAdding(false), 500)
+  }
 
   return (
     <Link href={`/product/${product.id}`}>
@@ -50,13 +76,13 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
           {/* Add to Cart Button */}
           <button
-            onClick={(e) => {
-              e.preventDefault()
-              onAddToCart(product)
-            }}
-            className="absolute bottom-3 right-3 p-2 rounded-full bg-primary text-primary-foreground hover:shadow-lg transition-all opacity-0 group-hover:opacity-100"
+            onClick={handleAddToCart}
+            disabled={isAdding}
+            className={`absolute bottom-3 right-3 p-2 rounded-full bg-primary text-primary-foreground hover:shadow-lg transition-all opacity-0 group-hover:opacity-100 ${
+              isAdding ? "animate-pulse" : ""
+            }`}
           >
-            <ShoppingCart className="w-5 h-5" />
+            {isAdding ? <Plus className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
           </button>
         </div>
 

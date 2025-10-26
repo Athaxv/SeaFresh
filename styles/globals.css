@@ -123,3 +123,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes bounce-once {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.3s ease-in-out;
+}
+
+/* Smooth transitions for cart badge */
+@keyframes scale-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.cart-badge-enter {
+  animation: scale-in 0.2s ease-out;
+}

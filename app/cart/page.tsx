@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
@@ -9,28 +9,38 @@ import { Card } from "@/components/ui/card"
 import { Trash2, Plus, Minus, ArrowLeft } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { formatPrice, calculateTax } from "@/lib/utils"
-
-// Mock product data for cart items
-const MOCK_PRODUCTS: Record<string, any> = {
-  "1": {
-    id: "1",
-    name: "Medium Prawns - Cleaned",
-    price: 450,
-    image: "/fresh-medium-prawns-on-wooden-board.jpg",
-    discount: 10,
-  },
-}
+import type { Product } from "@/lib/types"
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, clearCart } = useCart()
+  const { items, removeItem, updateQuantity, clearCart, getCartItemsWithProduct } = useCart()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products")
+        const data = await response.json()
+        setProducts(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error("Failed to fetch products:", error)
+        setProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProducts()
+  }, [])
+
+  const cartItemsWithProducts = getCartItemsWithProduct(products)
   const [couponCode, setCouponCode] = useState("")
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null)
 
   // Calculate totals
-  const subtotal = items.reduce((sum, item) => {
-    const product = MOCK_PRODUCTS[item.productId]
-    if (!product) return sum
-    const discountedPrice = product.discount ? Math.round(product.price * (1 - product.discount / 100)) : product.price
+  const subtotal = cartItemsWithProducts.reduce((sum, item) => {
+    const discountedPrice = item.product.discount
+      ? Math.round(item.product.price * (1 - item.product.discount / 100))
+      : item.product.price
     return sum + discountedPrice * item.quantity
   }, 0)
 
@@ -42,6 +52,18 @@ export default function CartPage() {
     if (couponCode === "SEAFRESH10") {
       setAppliedCoupon({ code: couponCode, discount: 10 })
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   if (items.length === 0) {
@@ -73,24 +95,21 @@ export default function CartPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {items.map((item) => {
-              const product = MOCK_PRODUCTS[item.productId]
-              if (!product) return null
-
-              const discountedPrice = product.discount
-                ? Math.round(product.price * (1 - product.discount / 100))
-                : product.price
+            {cartItemsWithProducts.map((item) => {
+              const discountedPrice = item.product.discount
+                ? Math.round(item.product.price * (1 - item.product.discount / 100))
+                : item.product.price
 
               return (
-                <Card key={item.productId} className="p-4 border-0 flex gap-4">
+                <Card key={`${item.productId}-${item.product.id}`} className="p-4 border-0 flex gap-4">
                   <img
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
+                    src={item.product.image || "/placeholder.svg"}
+                    alt={item.product.name}
                     className="w-24 h-24 object-cover rounded-lg"
                   />
 
                   <div className="flex-1">
-                    <h3 className="font-bold text-foreground mb-1">{product.name}</h3>
+                    <h3 className="font-bold text-foreground mb-1">{item.product.name}</h3>
                     <p className="text-sm text-muted-foreground mb-3">{item.weight}</p>
 
                     <div className="flex items-center justify-between">

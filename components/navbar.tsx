@@ -1,15 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, ShoppingCart, User, Menu, X } from "lucide-react"
+import { Search, ShoppingCart, User, Menu, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useCart } from "@/lib/cart-context"
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const { itemCount } = useCart()
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-primary/10">
+    <nav
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled ? "bg-white/98 backdrop-blur-md shadow-md" : "bg-white/95 backdrop-blur-md"
+      } border-b border-primary/10`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -47,17 +62,49 @@ export function Navbar() {
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="w-5 h-5" />
-                <span className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  0
-                </span>
+                {itemCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce-once">
+                    {itemCount}
+                  </span>
+                )}
               </Button>
             </Link>
 
-            <Link href="/login">
-              <Button variant="ghost" size="icon">
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+              >
                 <User className="w-5 h-5" />
-              </Button>
-            </Link>
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-border overflow-hidden">
+                  <Link
+                    href="/login"
+                    className="block px-4 py-2 hover:bg-muted transition-colors"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="block px-4 py-2 hover:bg-muted transition-colors"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                  <div className="border-t border-border">
+                    <Link
+                      href="/dashboard"
+                      className="block px-4 py-2 hover:bg-muted transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      My Account
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Mobile Menu Button */}
             <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>

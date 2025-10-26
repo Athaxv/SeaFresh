@@ -33,10 +33,6 @@ export default function ShopPage() {
     fetchProducts()
   }, [])
 
-  const handleAddToCart = (product: Product) => {
-    console.log("Added to cart:", product)
-  }
-
   const filteredProducts = useMemo(() => {
     let filtered = [...products]
 
@@ -148,7 +144,7 @@ export default function ShopPage() {
             {filteredProducts.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             ) : (
