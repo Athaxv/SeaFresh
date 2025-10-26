@@ -78,6 +78,48 @@ export default function DashboardPage() {
     }
   }
 
+  const handleReorder = async (order: any) => {
+    try {
+      setReorderingId(order.id)
+      const token = getAuthToken()
+      
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          addressId: order.addressId,
+          products: order.products,
+          subtotal: order.subtotal,
+          tax: order.tax,
+          discount: order.discount || 0,
+          totalAmount: order.totalAmount,
+          paymentMethod: order.paymentMethod || "COD"
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to create order")
+      }
+
+      const newOrder = await response.json()
+      toast.success("Order placed successfully!")
+      router.push(`/order-confirmation/${newOrder.id}`)
+    } catch (error) {
+      console.error("Error reordering:", error)
+      toast.error("Failed to reorder. Please try again.")
+    } finally {
+      setReorderingId(null)
+    }
+  }
+
+  const handleFavoriteAddToCart = (item: any) => {
+    addItem(item, 1)
+    toast.success("Added to cart!")
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -255,7 +297,13 @@ export default function DashboardPage() {
                                   Track
                                 </Button>
                               </Link>
-                              <Button size="sm">Reorder</Button>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleReorder(order)}
+                                disabled={reorderingId === order.id}
+                              >
+                                {reorderingId === order.id ? "Processing..." : "Reorder"}
+                              </Button>
                             </div>
                           </div>
                         </Card>
@@ -286,7 +334,7 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-foreground mb-2">{item.name}</h3>
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-bold text-primary">{item.price}</span>
-                          <Button size="sm">Add to Cart</Button>
+                          <Button size="sm" onClick={() => handleFavoriteAddToCart(item)}>Add to Cart</Button>
                         </div>
                       </div>
                     </Card>

@@ -38,6 +38,10 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
+  const [products, setProducts] = useState<any[]>([])
+  const [customers, setCustomers] = useState<any[]>([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
 
   // Fetch stats from API
   useEffect(() => {
@@ -69,6 +73,44 @@ export default function AdminDashboard() {
     fetchOrders()
   }, [])
 
+  // Fetch products when products tab is active
+  useEffect(() => {
+    if (activeTab === "products") {
+      const fetchProducts = async () => {
+        setLoadingProducts(true)
+        try {
+          const response = await fetch("/api/products")
+          const data = await response.json()
+          setProducts(Array.isArray(data) ? data : [])
+        } catch (error) {
+          console.error("Failed to fetch products:", error)
+        } finally {
+          setLoadingProducts(false)
+        }
+      }
+      fetchProducts()
+    }
+  }, [activeTab])
+
+  // Fetch customers when customers tab is active
+  useEffect(() => {
+    if (activeTab === "customers") {
+      const fetchCustomers = async () => {
+        setLoadingCustomers(true)
+        try {
+          const response = await fetch("/api/admin/customers")
+          const data = await response.json()
+          setCustomers(Array.isArray(data) ? data : [])
+        } catch (error) {
+          console.error("Failed to fetch customers:", error)
+        } finally {
+          setLoadingCustomers(false)
+        }
+      }
+      fetchCustomers()
+    }
+  }, [activeTab])
+
   const statsArray = [
     { label: "Total Orders", value: stats.totalOrders, change: "+12%", icon: ShoppingCart },
     { label: "Total Revenue", value: formatPrice(stats.totalRevenue), change: "+8%", icon: TrendingUp },
@@ -99,40 +141,7 @@ export default function AdminDashboard() {
     { name: "Others", value: 7 },
   ]
 
-  const products = [
-    {
-      id: "1",
-      name: "Medium Prawns - Cleaned",
-      category: "Prawn",
-      price: "₹450",
-      stock: 45,
-      sales: 234,
-    },
-    {
-      id: "2",
-      name: "Rohu Fish - Bengali Cut",
-      category: "Fish",
-      price: "₹247",
-      stock: 32,
-      sales: 189,
-    },
-    {
-      id: "3",
-      name: "Mackerel - Whole",
-      category: "Fish",
-      price: "₹448",
-      stock: 28,
-      sales: 156,
-    },
-    {
-      id: "4",
-      name: "Squid - Cleaned",
-      category: "Squid",
-      price: "₹320",
-      stock: 18,
-      sales: 98,
-    },
-  ]
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -373,31 +382,45 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product) => (
-                    <tr key={product.id} className="border-b border-border hover:bg-muted/50 transition">
-                      <td className="py-3 px-4 font-semibold text-foreground">{product.name}</td>
-                      <td className="py-3 px-4 text-foreground">{product.category}</td>
-                      <td className="py-3 px-4 font-semibold text-foreground">{product.price}</td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${product.stock > 20 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
-                        >
-                          {product.stock} units
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-foreground">{product.sales}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="ghost">
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                  {loadingProducts ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center">
+                        <Skeleton className="h-4 w-full" />
                       </td>
                     </tr>
-                  ))}
+                  ) : products.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        No products found
+                      </td>
+                    </tr>
+                  ) : (
+                    products.map((product) => (
+                      <tr key={product.id} className="border-b border-border hover:bg-muted/50 transition">
+                        <td className="py-3 px-4 font-semibold text-foreground">{product.name}</td>
+                        <td className="py-3 px-4 text-foreground capitalize">{product.category}</td>
+                        <td className="py-3 px-4 font-semibold text-foreground">{formatPrice(product.price)}</td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${product.stock > 20 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
+                          >
+                            {product.stock} units
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-foreground">-</td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="ghost">
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </Card>
@@ -477,37 +500,29 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    {
-                      name: "John Doe",
-                      email: "john@example.com",
-                      phone: "+91 9876543210",
-                      orders: 5,
-                      spent: "₹7,425",
-                    },
-                    {
-                      name: "Jane Smith",
-                      email: "jane@example.com",
-                      phone: "+91 9876543211",
-                      orders: 3,
-                      spent: "₹4,200",
-                    },
-                    {
-                      name: "Mike Johnson",
-                      email: "mike@example.com",
-                      phone: "+91 9876543212",
-                      orders: 8,
-                      spent: "₹12,800",
-                    },
-                  ].map((customer, idx) => (
-                    <tr key={idx} className="border-b border-border hover:bg-muted/50 transition">
-                      <td className="py-3 px-4 font-semibold text-foreground">{customer.name}</td>
-                      <td className="py-3 px-4 text-foreground">{customer.email}</td>
-                      <td className="py-3 px-4 text-foreground">{customer.phone}</td>
-                      <td className="py-3 px-4 text-foreground">{customer.orders}</td>
-                      <td className="py-3 px-4 font-semibold text-foreground">{customer.spent}</td>
+                  {loadingCustomers ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center">
+                        <Skeleton className="h-4 w-full" />
+                      </td>
                     </tr>
-                  ))}
+                  ) : customers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                        No customers found
+                      </td>
+                    </tr>
+                  ) : (
+                    customers.map((customer) => (
+                      <tr key={customer.id} className="border-b border-border hover:bg-muted/50 transition">
+                        <td className="py-3 px-4 font-semibold text-foreground">{customer.name || customer.username || 'N/A'}</td>
+                        <td className="py-3 px-4 text-foreground">{customer.email}</td>
+                        <td className="py-3 px-4 text-foreground">{customer.phone || 'N/A'}</td>
+                        <td className="py-3 px-4 text-foreground">{customer.orderCount || 0}</td>
+                        <td className="py-3 px-4 font-semibold text-foreground">{formatPrice(customer.totalSpent || 0)}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </Card>

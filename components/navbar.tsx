@@ -116,6 +116,15 @@ export function Navbar() {
                       >
                         Sign Up
                       </Link>
+                      <div className="border-t border-border">
+                        <Link
+                          href="/admin/login"
+                          className="block px-4 py-2 hover:bg-muted transition-colors text-primary"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Admin Login
+                        </Link>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -165,6 +174,21 @@ export function Navbar() {
             <Link href="/contact" className="block px-4 py-2 hover:bg-muted rounded">
               Contact
             </Link>
+            <div className="border-t border-border pt-2 mt-2">
+              {!user && (
+                <>
+                  <Link href="/login" className="block px-4 py-2 hover:bg-muted rounded">
+                    Sign In
+                  </Link>
+                  <Link href="/register" className="block px-4 py-2 hover:bg-muted rounded">
+                    Sign Up
+                  </Link>
+                  <Link href="/admin/login" className="block px-4 py-2 hover:bg-muted rounded text-primary">
+                    Admin Login
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

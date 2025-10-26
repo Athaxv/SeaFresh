@@ -2,6 +2,7 @@
 
 import { Navbar } from "@/components/navbar"
 import { HeroSection } from "@/components/hero-section"
+import { FeaturedProductsSection } from "@/components/featured-products-section"
 import { FeaturesShowcaseSection } from "@/components/features-showcase-section"
 import { CategoriesSection } from "@/components/categories-section"
 import { WhyChooseUs } from "@/components/why-choose-us"
@@ -15,6 +16,7 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
+      <FeaturedProductsSection />
       <FeaturesShowcaseSection />
       <CategoriesSection />
       <SellerBenefitsSection />
