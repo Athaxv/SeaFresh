@@ -1,57 +1,95 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Star, ShoppingCart, Heart, Truck, Shield, Leaf } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
+import { useCart } from "@/lib/cart-context"
+import { toast } from "sonner"
 
-// Mock product detail
-const MOCK_PRODUCT = {
-  id: "1",
-  name: "Medium Prawns - Cleaned",
-  description: "Fresh, medium-sized prawns, cleaned and ready to cook",
-  category: "prawn",
-  price: 450,
-  weight: "500g",
-  cut: "cleaned",
-  image: "/fresh-medium-prawns-on-wooden-board.jpg",
-  images: ["/fresh-medium-prawns-on-wooden-board.jpg"],
-  stock: 50,
-  rating: 4.8,
-  reviews: [
-    {
-      id: "1",
-      userId: "user1",
-      productId: "1",
-      rating: 5,
-      comment: "Excellent quality and freshness!",
-      createdAt: new Date(),
-    },
-  ],
-  nutrition: {
-    protein: "24g",
-    fat: "0.3g",
-    carbs: "0g",
-    calories: "99",
-    omega3: "0.3g",
-  },
-  origin: "Coastal India",
-  tags: ["bestseller", "fresh"],
-  discount: 10,
-  isFeatured: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
+interface ProductDetailPageProps {
+  params: {
+    id: string
+  }
 }
 
-export default function ProductDetailPage() {
+export default function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const router = useRouter()
+  const { addItem } = useCart()
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
-  const discountedPrice = MOCK_PRODUCT.discount
-    ? Math.round(MOCK_PRODUCT.price * (1 - MOCK_PRODUCT.discount / 100))
-    : MOCK_PRODUCT.price
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/products?id=${params.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          // If API returns array, find by id
+          const foundProduct = Array.isArray(data) 
+            ? data.find((p: any) => p.id === params.id) 
+            : data
+          setProduct(foundProduct || null)
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [params.id])
+
+  const handleAddToCart = () => {
+    if (!product) return
+    
+    addItem(product, quantity)
+    toast.success(`${quantity} ${quantity > 1 ? 'items' : 'item'} added to cart!`)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="grid md:grid-cols-2 gap-12">
+            <Skeleton className="h-96 w-full" />
+            <div className="space-y-6">
+              <Skeleton className="h-10 w-3/4" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 py-12 text-center">
+          <h1 className="text-4xl font-bold text-foreground mb-4">Product Not Found</h1>
+          <Button onClick={() => router.push('/shop')}>Back to Shop</Button>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  const discountedPrice = product.discount
+    ? Math.round(product.price * (1 - product.discount / 100))
+    : product.price
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,11 +102,11 @@ export default function ProductDetailPage() {
             Shop
           </a>
           {" / "}
-          <a href={`/shop?category=${MOCK_PRODUCT.category}`} className="hover:text-primary">
-            {MOCK_PRODUCT.category}
+          <a href={`/shop?category=${product.category}`} className="hover:text-primary">
+            {product.category}
           </a>
           {" / "}
-          <span className="text-foreground">{MOCK_PRODUCT.name}</span>
+          <span className="text-foreground">{product.name}</span>
         </div>
       </div>
 
@@ -79,18 +117,18 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             <div className="relative bg-muted rounded-2xl overflow-hidden h-96 md:h-full">
               <img
-                src={MOCK_PRODUCT.image || "/placeholder.svg"}
-                alt={MOCK_PRODUCT.name}
+                src={product.image || "/placeholder.svg"}
+                alt={product.name}
                 className="w-full h-full object-cover"
               />
-              {MOCK_PRODUCT.discount && (
+              {product.discount && (
                 <div className="absolute top-4 left-4 px-4 py-2 bg-red-500 text-white font-bold rounded-full">
-                  -{MOCK_PRODUCT.discount}%
+                  -{product.discount}%
                 </div>
               )}
             </div>
             <div className="grid grid-cols-4 gap-2">
-              {MOCK_PRODUCT.images.map((img, idx) => (
+              {product.images.map((img: string, idx: number) => (
                 <div key={idx} className="bg-muted rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-primary">
                   <img src={img || "/placeholder.svg"} alt={`View ${idx + 1}`} className="w-full h-20 object-cover" />
                 </div>
@@ -102,9 +140,9 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             {/* Header */}
             <div>
-              <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">{MOCK_PRODUCT.category}</p>
-              <h1 className="text-4xl font-bold text-foreground mb-2">{MOCK_PRODUCT.name}</h1>
-              <p className="text-muted-foreground">{MOCK_PRODUCT.description}</p>
+              <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">{product.category}</p>
+              <h1 className="text-4xl font-bold text-foreground mb-2">{product.name}</h1>
+              <p className="text-muted-foreground">{product.description}</p>
             </div>
 
             {/* Rating */}
@@ -114,13 +152,13 @@ export default function ProductDetailPage() {
                   <Star
                     key={i}
                     className={`w-5 h-5 ${
-                      i < Math.round(MOCK_PRODUCT.rating) ? "fill-accent text-accent" : "text-muted"
+                      i < Math.round(product.rating) ? "fill-accent text-accent" : "text-muted"
                     }`}
                   />
                 ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                {MOCK_PRODUCT.rating} ({MOCK_PRODUCT.reviews.length} reviews)
+                {product.rating} ({product.reviews.length} reviews)
               </span>
             </div>
 
@@ -128,12 +166,12 @@ export default function ProductDetailPage() {
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-bold text-foreground">{formatPrice(discountedPrice)}</span>
-                {MOCK_PRODUCT.discount && (
-                  <span className="text-xl text-muted-foreground line-through">{formatPrice(MOCK_PRODUCT.price)}</span>
+                {product.discount && (
+                  <span className="text-xl text-muted-foreground line-through">{formatPrice(product.price)}</span>
                 )}
               </div>
               <p className="text-sm text-green-600 font-semibold">
-                Save {formatPrice(MOCK_PRODUCT.price - discountedPrice)}
+                Save {formatPrice(product.price - discountedPrice)}
               </p>
             </div>
 
@@ -142,15 +180,15 @@ export default function ProductDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Weight</p>
-                  <p className="font-semibold text-foreground">{MOCK_PRODUCT.weight}</p>
+                  <p className="font-semibold text-foreground">{product.weight}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Cut Type</p>
-                  <p className="font-semibold text-foreground capitalize">{MOCK_PRODUCT.cut}</p>
+                  <p className="font-semibold text-foreground capitalize">{product.cut}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Origin</p>
-                  <p className="font-semibold text-foreground">{MOCK_PRODUCT.origin}</p>
+                  <p className="font-semibold text-foreground">{product.origin}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase">Stock</p>
@@ -174,11 +212,11 @@ export default function ProductDetailPage() {
                     +
                   </button>
                 </div>
-                <span className="text-sm text-muted-foreground">{MOCK_PRODUCT.stock} available</span>
+                <span className="text-sm text-muted-foreground">{product.stock} available</span>
               </div>
 
               <div className="flex gap-4">
-                <Button size="lg" className="flex-1 gap-2 bg-gradient-to-r from-primary to-secondary">
+                <Button size="lg" className="flex-1 gap-2 bg-gradient-to-r from-primary to-secondary" onClick={handleAddToCart}>
                   <ShoppingCart className="w-5 h-5" />
                   Add to Cart
                 </Button>
@@ -215,23 +253,23 @@ export default function ProductDetailPage() {
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-foreground">Protein</span>
-                  <span className="font-semibold">{MOCK_PRODUCT.nutrition.protein}</span>
+                  <span className="font-semibold">{product.nutrition.protein}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-foreground">Fat</span>
-                  <span className="font-semibold">{MOCK_PRODUCT.nutrition.fat}</span>
+                  <span className="font-semibold">{product.nutrition.fat}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-foreground">Carbs</span>
-                  <span className="font-semibold">{MOCK_PRODUCT.nutrition.carbs}</span>
+                  <span className="font-semibold">{product.nutrition.carbs}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-foreground">Calories</span>
-                  <span className="font-semibold">{MOCK_PRODUCT.nutrition.calories}</span>
+                  <span className="font-semibold">{product.nutrition.calories}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-foreground">Omega-3</span>
-                  <span className="font-semibold">{MOCK_PRODUCT.nutrition.omega3}</span>
+                  <span className="font-semibold">{product.nutrition.omega3}</span>
                 </div>
               </div>
             </Card>
@@ -241,7 +279,7 @@ export default function ProductDetailPage() {
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-6">Customer Reviews</h2>
             <div className="space-y-4">
-              {MOCK_PRODUCT.reviews.map((review) => (
+              {product.reviews.map((review: any) => (
                 <Card key={review.id} className="p-4 border-0 bg-muted/50">
                   <div className="flex gap-1 mb-2">
                     {[...Array(review.rating)].map((_, i) => (

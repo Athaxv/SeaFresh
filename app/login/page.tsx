@@ -5,32 +5,61 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
+import { Toaster } from "@/components/ui/sonner"
 
 export default function LoginPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Mock login - in production, call API
-    localStorage.setItem("user", JSON.stringify({ email: formData.email, role: isAdmin ? "admin" : "customer" }))
-    router.push(isAdmin ? "/admin" : "/dashboard")
+    
+    setIsLoading(true)
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok && data.token) {
+        // Store token and user data
+        sessionStorage.setItem("token", data.token)
+        sessionStorage.setItem("user", JSON.stringify(data.user))
+        localStorage.setItem("token", data.token)
+        localStorage.setItem("user", JSON.stringify(data.user))
+        
+        toast.success("Login successful! Redirecting...")
+        router.push('/dashboard')
+      } else {
+        toast.error(data.error || "Login failed")
+      }
+    } catch (error) {
+      console.error('Login failed', error)
+      toast.error('Login failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
+      <Toaster />
+      
       <div className="max-w-md mx-auto px-4 py-20">
         <Card className="p-8 border-0">
           {/* Header */}
@@ -40,26 +69,6 @@ export default function LoginPage() {
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
             <p className="text-muted-foreground">Sign in to your SeaFresh account</p>
-          </div>
-
-          {/* Login Type Toggle */}
-          <div className="flex gap-2 mb-6 bg-muted p-1 rounded-lg">
-            <button
-              onClick={() => setIsAdmin(false)}
-              className={`flex-1 py-2 rounded font-medium transition ${
-                !isAdmin ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              Customer
-            </button>
-            <button
-              onClick={() => setIsAdmin(true)}
-              className={`flex-1 py-2 rounded font-medium transition ${
-                isAdmin ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              Admin
-            </button>
           </div>
 
           {/* Form */}
@@ -99,8 +108,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button size="lg" className="w-full bg-gradient-to-r from-primary to-secondary">
-              Sign In
+            <Button size="lg" className="w-full bg-gradient-to-r from-primary to-secondary" disabled={isLoading}>
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
@@ -133,13 +142,11 @@ export default function LoginPage() {
               </Link>
             </p>
             <Link href="/" className="text-sm text-primary hover:text-primary/80 block">
-              Back to home
+              ← Back to home
             </Link>
           </div>
         </Card>
       </div>
-
-      <Footer />
     </div>
   )
 }

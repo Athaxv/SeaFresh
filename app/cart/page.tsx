@@ -6,9 +6,13 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Trash2, Plus, Minus, ArrowLeft } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Trash2, ArrowLeft, ShoppingCart } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { formatPrice, calculateTax } from "@/lib/utils"
+import { EmptyState } from "@/components/empty-state"
+import { ProductQuantitySelector } from "@/components/product-quantity-selector"
+import { TrustBadges } from "@/components/trust-badges"
 import type { Product } from "@/lib/types"
 
 export default function CartPage() {
@@ -70,15 +74,14 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Your Cart is Empty</h1>
-          <p className="text-muted-foreground mb-8">Add some fresh seafood to get started!</p>
-          <Link href="/shop">
-            <Button size="lg" className="gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Continue Shopping
-            </Button>
-          </Link>
+        <div className="max-w-7xl mx-auto px-4 py-20">
+          <EmptyState
+            icon="cart"
+            title="Your Cart is Empty"
+            description="Add some fresh seafood to get started! Browse our premium collection and build your order."
+            ctaLabel="Continue Shopping"
+            ctaHref="/shop"
+          />
         </div>
         <Footer />
       </div>
@@ -89,10 +92,21 @@ export default function CartPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold text-foreground mb-8">Shopping Cart</h1>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/shop">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Shopping Cart</h1>
+            <p className="text-sm text-muted-foreground">{items.length} items in your cart</p>
+          </div>
+        </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {cartItemsWithProducts.map((item) => {
@@ -108,38 +122,36 @@ export default function CartPage() {
                     className="w-24 h-24 object-cover rounded-lg"
                   />
 
-                  <div className="flex-1">
-                    <h3 className="font-bold text-foreground mb-1">{item.product.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{item.weight}</p>
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">{item.product.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {item.weight} • {item.product.origin}
+                      </p>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm font-medium text-primary">{formatPrice(discountedPrice)}</span>
+                        {item.product.discount && (
+                          <span className="text-xs text-muted-foreground line-through">{formatPrice(item.product.price)}</span>
+                        )}
+                      </div>
+                    </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                          className="p-1 hover:bg-muted rounded"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="w-8 text-center font-semibold">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                          className="p-1 hover:bg-muted rounded"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-
+                      <ProductQuantitySelector
+                        quantity={item.quantity}
+                        onQuantityChange={(qty) => updateQuantity(item.productId, qty)}
+                        min={1}
+                      />
+                      
                       <div className="text-right">
-                        <p className="font-bold text-foreground">{formatPrice(discountedPrice * item.quantity)}</p>
-                        <p className="text-xs text-muted-foreground">{formatPrice(discountedPrice)} each</p>
+                        <p className="font-bold text-lg text-foreground">{formatPrice(discountedPrice * item.quantity)}</p>
+                        <button
+                          onClick={() => removeItem(item.productId)}
+                          className="text-xs text-red-500 hover:text-red-600 transition-colors"
+                        >
+                          Remove
+                        </button>
                       </div>
-
-                      <button
-                        onClick={() => removeItem(item.productId)}
-                        className="p-2 hover:bg-red-50 rounded text-red-500 transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 </Card>
@@ -152,7 +164,7 @@ export default function CartPage() {
           </div>
 
           {/* Order Summary */}
-          <div className="space-y-4">
+          <div className="lg:col-span-1 space-y-4">
             <Card className="p-6 border-0 bg-gradient-to-br from-primary/5 to-secondary/5">
               <h2 className="text-xl font-bold text-foreground mb-6">Order Summary</h2>
 
@@ -186,22 +198,45 @@ export default function CartPage() {
             </Card>
 
             {/* Coupon */}
-            <Card className="p-4 border-0">
-              <p className="text-sm font-semibold text-foreground mb-3">Apply Coupon</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter code"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <Button size="sm" onClick={applyCoupon}>
-                  Apply
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">Try: SEAFRESH10</p>
-            </Card>
+            {!appliedCoupon && (
+              <Card className="p-4 border-0 bg-card">
+                <p className="text-sm font-semibold text-foreground mb-3">Apply Coupon</p>
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="flex-1 text-sm"
+                  />
+                  <Button size="sm" onClick={applyCoupon}>
+                    Apply
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Try: SEAFRESH10</p>
+              </Card>
+            )}
+            
+            {appliedCoupon && (
+              <Card className="p-4 border-0 bg-green-50 border-green-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-green-700">Coupon Applied</p>
+                    <p className="text-xs text-green-600">{couponCode} - 10% off</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setAppliedCoupon(null)
+                      setCouponCode("")
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </Card>
+            )}
 
             {/* Benefits */}
             <Card className="p-4 border-0 bg-muted/50">
@@ -222,6 +257,9 @@ export default function CartPage() {
             </Card>
           </div>
         </div>
+
+        {/* Trust Badges */}
+        <TrustBadges />
       </div>
 
       <Footer />

@@ -14,9 +14,12 @@ import { AddressDialog } from "@/components/address-dialog"
 import { User, Package, Heart, Bell, LogOut, Edit2, MapPin } from "lucide-react"
 import { getAuthToken, logout as authLogout } from "@/lib/auth-client"
 import { formatPrice } from "@/lib/utils"
+import { useCart } from "@/lib/cart-context"
+import { toast } from "sonner"
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { addItem } = useCart()
   const [activeTab, setActiveTab] = useState("orders")
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false)
@@ -24,6 +27,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<any>(null)
   const [orders, setOrders] = useState<any[]>([])
   const [addresses, setAddresses] = useState<any[]>([])
+  const [reorderingId, setReorderingId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchUserData = async () => {
