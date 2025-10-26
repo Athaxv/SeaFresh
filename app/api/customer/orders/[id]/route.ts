@@ -1,4 +1,4 @@
-import prisma from "../../../../../../lib/db2"
+import prisma from "../../../../../lib/db2"
 import { type NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
 
