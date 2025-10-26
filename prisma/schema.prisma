@@ -26,6 +26,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   addresses Address[]
+  cart Cart?
+  orders Order[]
+
 }
 
 model Admin {
@@ -35,10 +38,9 @@ model Admin {
   username String
   name String?
   phone String?
+  role Role @default(ADMIN)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-
 }
 
 model Seller {
@@ -49,10 +51,11 @@ model Seller {
   name String?
   phone String?
   companyName String?
+  role Role @default(SELLER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-
+  products Product[]
 }
 
 
@@ -69,9 +72,137 @@ model Address {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
 }
 
-model Orders {
+model Product {
+  id String @id @default(cuid())
+  sellerId String?
+  name String
+  description String
+  category Category
+  price Float
+  weight String
+  image String
+  images String[] @default([])
+  cut String?
+  stock Int @default(0)
+  origin String?
+  rating Float @default(3)
+  isFeatured Boolean @default(false)
 
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  seller Seller? @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  cartItems CartItem[]
+  nutrition NutritionFacts?
+
+  @@index([category])
+  @@index([isFeatured])
 }
+
+model NutritionFacts {
+  id String @id @default(cuid())
+  productId String @unique
+  protein String
+  fat String
+  carbs String
+  calories String
+  omega3 String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Cart {
+  id String @id @default(cuid())
+  userId String @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id String @id @default(cuid())
+  productId String
+  cartId String
+  quantity Int @default(1)
+  weight String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId])
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  SELLER
+}
+
+model Order {
+  id String @id @default(cuid())
+  userId String
+  addressId String
+  orderNumber String @unique 
+  subtotal Float
+  totalAmount Float
+  tax Float
+  discount Float @default(0)
+  
+  // Store all products as JSON array
+  products Json
+  
+  paymentMethod PaymentMethod @default(COD)
+  paymentStatus PaymentStatus @default(PENDING)
+  orderStatus OrderStatus @default(PENDING)
+  trackingNumber String?
+  deliveryDate DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address Address @relation(fields: [addressId], references: [id])
+
+  @@index([userId])
+  @@index([orderStatus])
+}
+
+enum Category {
+  FISH
+  PRAWN
+  CRAB
+  LOBSTER
+  SQUID
+  COMBO
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  COD
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
 
