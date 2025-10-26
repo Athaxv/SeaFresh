@@ -5,38 +5,55 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
+import { Toaster } from "@/components/ui/sonner"
 
 export default function RegisterPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
+    username: "",
     email: "",
     phone: "",
     password: "",
     confirmPassword: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match")
+      toast.error("Passwords don't match")
       return
     }
-    // Mock registration - in production, call API
-    localStorage.setItem("user", JSON.stringify({ email: formData.email, name: formData.name, role: "customer" }))
-    router.push("/dashboard")
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      })
+      const data = await response.json();
+      if (response.ok){
+        toast.success("Registration successful! Please login.")
+        router.push('/login')
+      } else {
+        toast.error(data.error || "Registration failed")
+      }
+    } catch (error) {
+      console.error('Registration failed', error)
+      toast.error('Registration failed. Please try again.')
+    }
+    
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
+      <Toaster />
+      
       <div className="max-w-md mx-auto px-4 py-20">
         <Card className="p-8 border-0">
           {/* Header */}
@@ -56,8 +73,8 @@ export default function RegisterPage() {
                 <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="John Doe"
                   className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -141,18 +158,19 @@ export default function RegisterPage() {
           </p>
 
           {/* Footer */}
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link href="/login" className="text-primary hover:text-primary/80 font-semibold">
                 Sign in
               </Link>
             </p>
+            <Link href="/" className="text-sm text-primary hover:text-primary/80 block">
+              ← Back to home
+            </Link>
           </div>
         </Card>
       </div>
-
-      <Footer />
     </div>
   )
 }

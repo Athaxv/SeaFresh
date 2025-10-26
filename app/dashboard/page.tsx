@@ -1,63 +1,102 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/empty-state"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { AddressDialog } from "@/components/address-dialog"
 import { User, Package, Heart, Bell, LogOut, Edit2, MapPin } from "lucide-react"
+import { getAuthToken, logout as authLogout } from "@/lib/auth-client"
+import { formatPrice } from "@/lib/utils"
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState("orders")
   const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+91 9876543210",
-    addresses: [
-      {
-        id: 1,
-        name: "Home",
-        address: "123 Main St, Mumbai, 400001",
-        isDefault: true,
-      },
-      {
-        id: 2,
-        name: "Office",
-        address: "456 Business Park, Mumbai, 400002",
-        isDefault: false,
-      },
-    ],
-  })
+  const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
+  const [orders, setOrders] = useState<any[]>([])
+  const [addresses, setAddresses] = useState<any[]>([])
 
-  const orders = [
-    {
-      id: "ORD001",
-      date: "2025-01-15",
-      items: 3,
-      total: "₹1,485",
-      status: "delivered",
-      products: ["Medium Prawns", "Rohu Fish", "Squid"],
-    },
-    {
-      id: "ORD002",
-      date: "2025-01-10",
-      items: 2,
-      total: "₹890",
-      status: "delivered",
-      products: ["Mackerel Fish", "Small Prawns"],
-    },
-    {
-      id: "ORD003",
-      date: "2025-01-05",
-      items: 4,
-      total: "₹2,150",
-      status: "delivered",
-      products: ["Catla Fish", "Medium Prawns", "Squid", "Crab"],
-    },
-  ]
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = getAuthToken()
+        if (!token) {
+          router.push("/login")
+          return
+        }
+
+        // Fetch profile
+        const profileRes = await fetch("/api/customer/profile", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (!profileRes.ok) throw new Error("Failed to fetch profile")
+        const profileData = await profileRes.json()
+        setProfile(profileData)
+        setAddresses(profileData.addresses || [])
+
+        // Fetch orders
+        const ordersRes = await fetch("/api/customer/orders", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (!ordersRes.ok) throw new Error("Failed to fetch orders")
+        const ordersData = await ordersRes.json()
+        setOrders(ordersData)
+      } catch (error) {
+        console.error("Error:", error)
+        router.push("/login")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserData()
+  }, [router])
+
+  const handleAddressAdded = async () => {
+    try {
+      const token = getAuthToken()
+      const res = await fetch("/api/customer/profile", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      setAddresses(data.addresses || [])
+    } catch (error) {
+      console.error("Error fetching addresses:", error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <div className="grid lg:grid-cols-4 gap-8">
+            <Card className="p-6 border-0">
+              <Skeleton className="h-16 w-16 rounded-full mx-auto mb-4" />
+              <Skeleton className="h-6 w-32 mx-auto" />
+              <Skeleton className="h-4 w-48 mx-auto mt-2" />
+            </Card>
+            <div className="lg:col-span-3 space-y-4">
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (!profile) return null
 
   const favorites = [
     {
@@ -106,7 +145,7 @@ export default function DashboardPage() {
                 <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto mb-4 flex items-center justify-center">
                   <User className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="font-bold text-foreground">{profile.name}</h3>
+                <h3 className="font-bold text-foreground">{profile.name || profile.username || 'User'}</h3>
                 <p className="text-sm text-muted-foreground">{profile.email}</p>
               </div>
 
@@ -133,7 +172,11 @@ export default function DashboardPage() {
                 })}
               </nav>
 
-              <Button variant="outline" className="w-full mt-6 bg-transparent gap-2">
+              <Button 
+                variant="outline" 
+                className="w-full mt-6 bg-transparent gap-2"
+                onClick={authLogout}
+              >
                 <LogOut className="w-4 h-4" />
                 Logout
               </Button>
@@ -150,48 +193,72 @@ export default function DashboardPage() {
                   <p className="text-muted-foreground">Track and manage your orders</p>
                 </div>
 
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <Card key={order.id} className="p-6 border-0 hover:shadow-lg transition">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                        <div>
-                          <h3 className="font-bold text-foreground mb-1">{order.id}</h3>
-                          <p className="text-sm text-muted-foreground">{order.date}</p>
-                        </div>
-                        <span
-                          className={`px-4 py-2 rounded-full text-sm font-semibold capitalize ${getStatusColor(
-                            order.status,
-                          )}`}
-                        >
-                          {order.status}
-                        </span>
-                      </div>
-
-                      <div className="mb-4 pb-4 border-b border-border">
-                        <p className="text-sm text-muted-foreground mb-2">Items:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {order.products.map((product, idx) => (
-                            <span key={idx} className="text-xs bg-muted px-3 py-1 rounded-full">
-                              {product}
+                {orders.length === 0 ? (
+                  <EmptyState
+                    icon="package"
+                    title="No Orders Yet"
+                    description="You haven't placed any orders yet. Start shopping to see your orders here!"
+                    ctaLabel="Start Shopping"
+                    ctaHref="/shop"
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {orders.map((order) => {
+                      const productsArray = Array.isArray(order.products) ? order.products : []
+                      return (
+                        <Card key={order.id} className="p-6 border-0 hover:shadow-lg transition">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                            <div>
+                              <h3 className="font-bold text-foreground mb-1">{order.orderNumber || order.id}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(order.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span
+                              className={`px-4 py-2 rounded-full text-sm font-semibold capitalize ${getStatusColor(
+                                order.orderStatus.toLowerCase(),
+                              )}`}
+                            >
+                              {order.orderStatus.toLowerCase()}
                             </span>
-                          ))}
-                        </div>
-                      </div>
+                          </div>
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-foreground">{order.total}</span>
-                        <div className="flex gap-2">
-                          <Link href={`/track-order/${order.id}`}>
-                            <Button size="sm" variant="outline" className="bg-transparent">
-                              Track
-                            </Button>
-                          </Link>
-                          <Button size="sm">Reorder</Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                          <div className="mb-4 pb-4 border-b border-border">
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Items ({productsArray.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {productsArray.slice(0, 5).map((product: any, idx: number) => (
+                                <span key={idx} className="text-xs bg-muted px-3 py-1 rounded-full">
+                                  {product.name}
+                                </span>
+                              ))}
+                              {productsArray.length > 5 && (
+                                <span className="text-xs bg-muted px-3 py-1 rounded-full">
+                                  +{productsArray.length - 5} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-foreground">
+                              {formatPrice(order.totalAmount)}
+                            </span>
+                            <div className="flex gap-2">
+                              <Link href={`/track-order/${order.id}`}>
+                                <Button size="sm" variant="outline" className="bg-transparent">
+                                  Track
+                                </Button>
+                              </Link>
+                              <Button size="sm">Reorder</Button>
+                            </div>
+                          </div>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                )}
               </TabsContent>
 
               {/* Favorites Tab */}
@@ -250,7 +317,7 @@ export default function DashboardPage() {
                       <label className="text-sm font-semibold text-foreground block mb-2">Full Name</label>
                       <input
                         type="text"
-                        value={profile.name}
+                        value={profile.name || profile.username || ''}
                         disabled={!isEditingProfile}
                         className="w-full px-4 py-2 border border-border rounded-lg disabled:bg-muted"
                       />
@@ -259,7 +326,7 @@ export default function DashboardPage() {
                       <label className="text-sm font-semibold text-foreground block mb-2">Email</label>
                       <input
                         type="email"
-                        value={profile.email}
+                        value={profile.email || ''}
                         disabled={!isEditingProfile}
                         className="w-full px-4 py-2 border border-border rounded-lg disabled:bg-muted"
                       />
@@ -268,7 +335,7 @@ export default function DashboardPage() {
                       <label className="text-sm font-semibold text-foreground block mb-2">Phone</label>
                       <input
                         type="tel"
-                        value={profile.phone}
+                        value={profile.phone || ''}
                         disabled={!isEditingProfile}
                         className="w-full px-4 py-2 border border-border rounded-lg disabled:bg-muted"
                       />
@@ -280,27 +347,41 @@ export default function DashboardPage() {
                 {/* Addresses */}
                 <Card className="p-6 border-0">
                   <h3 className="text-xl font-bold text-foreground mb-6">Saved Addresses</h3>
-                  <div className="space-y-4">
-                    {profile.addresses.map((addr) => (
-                      <div key={addr.id} className="p-4 border border-border rounded-lg">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-primary" />
-                            <h4 className="font-bold text-foreground">{addr.name}</h4>
+                  {addresses.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground mb-4">No saved addresses</p>
+                      <Button 
+                        variant="outline" 
+                        className="bg-transparent"
+                        onClick={() => setIsAddressDialogOpen(true)}
+                      >
+                        Add New Address
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {addresses.map((addr: any) => (
+                        <div key={addr.id} className="p-4 border border-border rounded-lg">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-primary" />
+                              <h4 className="font-bold text-foreground">{addr.name}</h4>
+                            </div>
                           </div>
-                          {addr.isDefault && (
-                            <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
-                              Default
-                            </span>
-                          )}
+                          <p className="text-sm text-muted-foreground">
+                            {addr.street}, {addr.city}, {addr.state} - {addr.pincode}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">{addr.address}</p>
-                      </div>
-                    ))}
-                    <Button variant="outline" className="w-full bg-transparent">
-                      Add New Address
-                    </Button>
-                  </div>
+                      ))}
+                      <Button 
+                        variant="outline" 
+                        className="w-full bg-transparent"
+                        onClick={() => setIsAddressDialogOpen(true)}
+                      >
+                        Add New Address
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               </TabsContent>
 
@@ -355,6 +436,13 @@ export default function DashboardPage() {
       </div>
 
       <Footer />
+
+      {/* Address Dialog */}
+      <AddressDialog
+        open={isAddressDialogOpen}
+        onOpenChange={setIsAddressDialogOpen}
+        onAddressAdded={handleAddressAdded}
+      />
     </div>
   )
 }
