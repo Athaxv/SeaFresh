@@ -182,6 +182,7 @@ enum Category {
   LOBSTER
   SQUID
   COMBO
+  SHELLFISH
 }
 
 enum PaymentMethod {
