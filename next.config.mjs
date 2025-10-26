@@ -6,6 +6,13 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  outputFileTracingExcludes: {
+    '*': [
+      'C:\\Users\\**\\Application Data\\**',
+      'C:\\ProgramData\\**',
+      'C:\\Windows\\**',
+    ],
+  },
 }
 
 export default nextConfig
