@@ -894,3 +894,6 @@ export async function validateCoupon(code: string): Promise<Coupon | null> {
 export async function getActiveBanners(): Promise<Banner[]> {
   return banners.filter((b) => b.isActive).sort((a, b) => a.displayOrder - b.displayOrder)
 }
+
+
+
