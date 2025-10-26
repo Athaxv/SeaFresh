@@ -4,11 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface ProductSortProps {
   onSortChange: (sortBy: string) => void
+  currentValue?: string
 }
 
-export function ProductSort({ onSortChange }: ProductSortProps) {
+export function ProductSort({ onSortChange, currentValue = "popularity" }: ProductSortProps) {
   return (
-    <Select onValueChange={onSortChange}>
+    <Select value={currentValue} onValueChange={onSortChange}>
       <SelectTrigger className="w-full sm:w-48">
         <SelectValue placeholder="Sort by" />
       </SelectTrigger>

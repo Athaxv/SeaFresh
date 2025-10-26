@@ -20,26 +20,31 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const { addItem } = useCart()
   const discountedPrice = product.discount ? Math.round(product.price * (1 - product.discount / 100)) : product.price
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     
     if (isAdding) return
     
-    setIsAdding(true)
-    
-    // Call custom handler if provided, otherwise use context
-    if (onAddToCart) {
-      onAddToCart(product)
-    } else {
-      addItem(product, 1)
+    try {
+      setIsAdding(true)
+      
+      // Call custom handler if provided, otherwise use context
+      if (onAddToCart) {
+        onAddToCart(product)
+      } else {
+        addItem(product, 1)
+      }
+      
+      toast.success(`${product.name} added to cart!`, {
+        description: "Browse more or checkout now",
+      })
+    } catch (error) {
+      console.error("Error adding to cart:", error)
+      toast.error("Failed to add item to cart. Please try again.")
+    } finally {
+      setTimeout(() => setIsAdding(false), 500)
     }
-    
-    toast.success(`${product.name} added to cart!`, {
-      description: "Browse more or checkout now",
-    })
-    
-    setTimeout(() => setIsAdding(false), 500)
   }
 
   return (
@@ -67,9 +72,10 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           <button
             onClick={(e) => {
               e.preventDefault()
+              e.stopPropagation()
               setIsFavorite(!isFavorite)
             }}
-            className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white transition-all"
+            className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white transition-all z-10"
           >
             <Heart className={`w-5 h-5 ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
           </button>
@@ -78,7 +84,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           <button
             onClick={handleAddToCart}
             disabled={isAdding}
-            className={`absolute bottom-3 right-3 p-2 rounded-full bg-primary text-primary-foreground hover:shadow-lg transition-all opacity-0 group-hover:opacity-100 ${
+            className={`absolute bottom-3 right-3 p-2 rounded-full bg-primary text-primary-foreground hover:shadow-lg transition-all opacity-0 group-hover:opacity-100 z-10 ${
               isAdding ? "animate-pulse" : ""
             }`}
           >
@@ -112,7 +118,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                 </span>
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">({product.reviews.length})</span>
+            <span className="text-xs text-muted-foreground">({product.reviews?.length || 0})</span>
           </div>
 
           {/* Price */}
