@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Mail, Lock, Eye, EyeOff, Building2 } from "lucide-react"
 import { toast } from "sonner"
-import { Toaster } from "@/components/ui/sonner"
 
 export default function SellerLoginPage() {
   const router = useRouter()
@@ -63,8 +62,6 @@ export default function SellerLoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
-      <Toaster />
-      
       <div className="max-w-md mx-auto px-4 py-20">
         <Card className="p-8 border-0">
           {/* Header */}

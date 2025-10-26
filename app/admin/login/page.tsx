@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Mail, Lock, Eye, EyeOff, Shield } from "lucide-react"
 import { toast } from "sonner"
-import { Toaster } from "@/components/ui/sonner"
 
 export default function AdminLoginPage() {
   const router = useRouter()
@@ -45,6 +44,9 @@ export default function AdminLoginPage() {
         localStorage.setItem("token", data.token)
         localStorage.setItem("user", JSON.stringify(data.user))
         
+        // Set cookie for middleware
+        document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`
+        
         toast.success("Login successful! Redirecting...")
         router.push("/admin")
       } else {
@@ -60,8 +62,6 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-red-50 to-background">
-      <Toaster />
-      
       <div className="max-w-md mx-auto px-4 py-20">
         <Card className="p-8 border-0">
           {/* Header */}
