@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { EmptyState } from "@/components/empty-state"
+import { formatPrice } from "@/lib/utils"
 import {
   LineChart,
   Line,
@@ -20,21 +23,64 @@ import {
   Pie,
   Cell,
 } from "recharts"
-import { TrendingUp, Package, ShoppingCart, Users, Plus, Edit2, Trash2, Eye } from "lucide-react"
+import { TrendingUp, Package, ShoppingCart, Users, Plus, Edit2, Trash2, Eye, ChevronDown, ChevronUp } from "lucide-react"
 
 const CHART_COLORS = ["#003B73", "#00A6A6", "#FF6B6B", "#FFB84D", "#6C5CE7"]
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    totalProducts: 0,
+    totalCustomers: 0
+  })
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
 
-  // Mock data
-  const stats = [
-    { label: "Total Orders", value: "1,234", change: "+12%", icon: ShoppingCart },
-    { label: "Total Revenue", value: "₹4,85,600", change: "+8%", icon: TrendingUp },
-    { label: "Active Products", value: "48", change: "+3", icon: Package },
-    { label: "Total Customers", value: "892", change: "+45", icon: Users },
+  // Fetch stats from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("/api/admin/dashboard/stats")
+        const data = await response.json()
+        setStats(data)
+      } catch (error) {
+        console.error("Failed to fetch stats:", error)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  // Fetch orders from API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch("/api/admin/orders")
+        const data = await response.json()
+        setOrders(data)
+      } catch (error) {
+        console.error("Failed to fetch orders:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchOrders()
+  }, [])
+
+  const statsArray = [
+    { label: "Total Orders", value: stats.totalOrders, change: "+12%", icon: ShoppingCart },
+    { label: "Total Revenue", value: formatPrice(stats.totalRevenue), change: "+8%", icon: TrendingUp },
+    { label: "Active Products", value: stats.totalProducts, change: "+3", icon: Package },
+    { label: "Total Customers", value: stats.totalCustomers, change: "+45", icon: Users },
   ]
 
+  const toggleOrderDetails = (orderId: string) => {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId)
+  }
+
+  // Mock data for charts (can be replaced with real analytics data later)
   const salesData = [
     { date: "Mon", sales: 4000, orders: 24 },
     { date: "Tue", sales: 3000, orders: 13 },
@@ -51,13 +97,6 @@ export default function AdminDashboard() {
     { name: "Squid", value: 18 },
     { name: "Crabs", value: 12 },
     { name: "Others", value: 7 },
-  ]
-
-  const recentOrders = [
-    { id: "ORD001", customer: "John Doe", amount: "₹1,485", status: "delivered", date: "2025-01-15" },
-    { id: "ORD002", customer: "Jane Smith", amount: "₹890", status: "processing", date: "2025-01-14" },
-    { id: "ORD003", customer: "Mike Johnson", amount: "₹2,150", status: "shipped", date: "2025-01-13" },
-    { id: "ORD004", customer: "Sarah Williams", amount: "₹1,200", status: "pending", date: "2025-01-12" },
   ]
 
   const products = [
@@ -124,23 +163,35 @@ export default function AdminDashboard() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-8">
             {/* Stats Cards */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.map((stat, idx) => {
-                const Icon = stat.icon
-                return (
-                  <Card key={idx} className="p-6 border-0">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      <span className="text-xs font-semibold text-green-600">{stat.change}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-                    <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+            {loading ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <Card key={i} className="p-6 border-0">
+                    <Skeleton className="h-12 w-12 mb-4" />
+                    <Skeleton className="h-4 w-24 mb-2" />
+                    <Skeleton className="h-8 w-32" />
                   </Card>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {statsArray.map((stat, idx) => {
+                  const Icon = stat.icon
+                  return (
+                    <Card key={idx} className="p-6 border-0">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+                          <Icon className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="text-xs font-semibold text-green-600">{stat.change}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
+                      <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Charts */}
             <div className="grid lg:grid-cols-3 gap-6">
@@ -170,7 +221,7 @@ export default function AdminDashboard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, value }) => `${name} ${value}%`}
+                      label={({ name, value }: { name: string; value: number }) => `${name} ${value}%`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -189,42 +240,113 @@ export default function AdminDashboard() {
             <Card className="p-6 border-0">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-foreground">Recent Orders</h3>
-                <Link href="/admin/orders">
-                  <Button size="sm" variant="outline" className="bg-transparent">
-                    View All
-                  </Button>
-                </Link>
+                {orders.length > 0 && (
+                  <Link href="/admin/orders">
+                    <Button size="sm" variant="outline" className="bg-transparent">
+                      View All
+                    </Button>
+                  </Link>
+                )}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 font-semibold text-foreground">Order ID</th>
-                      <th className="text-left py-3 px-4 font-semibold text-foreground">Customer</th>
-                      <th className="text-left py-3 px-4 font-semibold text-foreground">Amount</th>
-                      <th className="text-left py-3 px-4 font-semibold text-foreground">Status</th>
-                      <th className="text-left py-3 px-4 font-semibold text-foreground">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map((order) => (
-                      <tr key={order.id} className="border-b border-border hover:bg-muted/50 transition">
-                        <td className="py-3 px-4 font-semibold text-foreground">{order.id}</td>
-                        <td className="py-3 px-4 text-foreground">{order.customer}</td>
-                        <td className="py-3 px-4 font-semibold text-foreground">{order.amount}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusColor(order.status)}`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-muted-foreground">{order.date}</td>
+              {loading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              ) : orders.length === 0 ? (
+                <EmptyState
+                  icon="package"
+                  title="No Orders Yet"
+                  description="Orders will appear here once customers start placing them."
+                />
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-4 font-semibold text-foreground">Order #</th>
+                        <th className="text-left py-3 px-4 font-semibold text-foreground">Customer</th>
+                        <th className="text-left py-3 px-4 font-semibold text-foreground">Amount</th>
+                        <th className="text-left py-3 px-4 font-semibold text-foreground">Status</th>
+                        <th className="text-left py-3 px-4 font-semibold text-foreground">Date</th>
+                        <th className="text-left py-3 px-4 font-semibold text-foreground">Details</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {orders.slice(0, 5).map((order) => (
+                        <>
+                          <tr key={order.id} className="border-b border-border hover:bg-muted/50 transition">
+                            <td className="py-3 px-4 font-semibold text-foreground">{order.orderNumber || order.id}</td>
+                            <td className="py-3 px-4 text-foreground">
+                              {order.user?.name || order.user?.username || 'N/A'}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-foreground">
+                              {formatPrice(order.totalAmount)}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${getStatusColor(order.orderStatus.toLowerCase())}`}
+                              >
+                                {order.orderStatus.toLowerCase()}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {new Date(order.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                onClick={() => toggleOrderDetails(order.id)}
+                              >
+                                {expandedOrderId === order.id ? (
+                                  <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </td>
+                          </tr>
+                          {expandedOrderId === order.id && (
+                            <tr>
+                              <td colSpan={6} className="bg-muted/30 p-4">
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                    <Package className="w-4 h-4" />
+                                    Order Items:
+                                  </h4>
+                                  {Array.isArray(order.products) && order.products.length > 0 ? (
+                                    order.products.map((product: any, idx: number) => (
+                                      <div key={idx} className="flex items-center justify-between py-2 border-b border-border">
+                                        <div className="flex-1">
+                                          <p className="font-medium">{product.name}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                            Seller: {product.sellerInfo?.companyName || product.sellerInfo?.username || 'N/A'}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">{product.weight} • {product.category}</p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="font-medium">{formatPrice(product.price)} × {product.quantity}</p>
+                                          <p className="text-sm text-muted-foreground">
+                                            Total: {formatPrice(product.price * product.quantity)}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">No product details available</p>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card>
           </TabsContent>
 
@@ -298,28 +420,42 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentOrders.map((order) => (
-                    <tr key={order.id} className="border-b border-border hover:bg-muted/50 transition">
-                      <td className="py-3 px-4 font-semibold text-foreground">{order.id}</td>
-                      <td className="py-3 px-4 text-foreground">{order.customer}</td>
-                      <td className="py-3 px-4 font-semibold text-foreground">{order.amount}</td>
-                      <td className="py-3 px-4">
-                        <select className="px-3 py-1 rounded-lg border border-border text-xs font-semibold bg-background">
-                          <option value="pending">Pending</option>
-                          <option value="processing">Processing</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                        </select>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">{order.date}</td>
-                      <td className="py-3 px-4">
-                        <Button size="sm" variant="ghost" className="gap-1">
-                          <Eye className="w-4 h-4" />
-                          View
-                        </Button>
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        No orders found
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    orders.map((order) => (
+                      <tr key={order.id} className="border-b border-border hover:bg-muted/50 transition">
+                        <td className="py-3 px-4 font-semibold text-foreground">{order.orderNumber || order.id}</td>
+                        <td className="py-3 px-4 text-foreground">
+                          {order.user?.name || order.user?.username || 'N/A'}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-foreground">
+                          {formatPrice(order.totalAmount)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <select className="px-3 py-1 rounded-lg border border-border text-xs font-semibold bg-background" defaultValue={order.orderStatus.toLowerCase()}>
+                            <option value="pending">Pending</option>
+                            <option value="processing">Processing</option>
+                            <option value="shipped">Shipped</option>
+                            <option value="delivered">Delivered</option>
+                          </select>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button size="sm" variant="ghost" className="gap-1">
+                            <Eye className="w-4 h-4" />
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </Card>

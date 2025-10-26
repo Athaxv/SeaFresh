@@ -1,5 +1,4 @@
-import prisma from "../../../../lib/db2"
-import { createToken } from "@/lib/auth"
+import prisma from "../../../../../lib/db2"
 import { validateEmail } from "@/lib/utils"
 import { type NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
@@ -14,29 +13,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
     }
 
-    const user = await prisma.user.findFirst({
+    const admin = await prisma.admin.findFirst({
       where: {
         email: email,
         password: password
       }
     })
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    
+    if (!admin) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 404 })
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role}, SECRET_KEY, { expiresIn: '7d' })
+    const token = jwt.sign(
+      { 
+        userId: admin.id, 
+        email: admin.email, 
+        role: "ADMIN" 
+      },
+      SECRET_KEY,
+      { expiresIn: '7d' }
+    )
 
     return NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.username,
-        role: user.role,
+        id: admin.id,
+        email: admin.email,
+        username: admin.username,
+        name: admin.name,
+        role: admin.role,
       },
       token,
     })
   } catch (error) {
+    console.error('Login error:', error)
     return NextResponse.json({ error: "Login failed" }, { status: 500 })
   }
 }
+
+
