@@ -1,28 +1,62 @@
-import { getAllProducts, getProductsByCategory, searchProducts, initializeDatabase } from "@/lib/db"
+import prisma from "../../../lib/db2"
 import { type NextRequest, NextResponse } from "next/server"
-
-let initialized = false
 
 export async function GET(request: NextRequest) {
   try {
-    // Initialize database once
-    if (!initialized) {
-      initializeDatabase()
-      initialized = true
-    }
-
     const searchParams = request.nextUrl.searchParams
     const category = searchParams.get("category")
     const query = searchParams.get("q")
 
     let products
 
-    if (query) {
-      products = await searchProducts(query)
-    } else if (category) {
-      products = await getProductsByCategory(category)
+    if (category) {
+      products = await prisma.product.findMany({
+        where: {
+          category: category as any
+        },
+        include: {
+          nutrition: true,
+          seller: {
+            select: {
+              id: true,
+              companyName: true,
+              username: true
+            }
+          }
+        }
+      })
+    } else if (query) {
+      products = await prisma.product.findMany({
+        where: {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } }
+          ]
+        },
+        include: {
+          nutrition: true,
+          seller: {
+            select: {
+              id: true,
+              companyName: true,
+              username: true
+            }
+          }
+        }
+      })
     } else {
-      products = await getAllProducts()
+      products = await prisma.product.findMany({
+        include: {
+          nutrition: true,
+          seller: {
+            select: {
+              id: true,
+              companyName: true,
+              username: true
+            }
+          }
+        }
+      })
     }
 
     return NextResponse.json(products || [])
