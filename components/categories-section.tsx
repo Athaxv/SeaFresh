@@ -57,12 +57,15 @@ const categories = [
 
 export function CategoriesSection() {
   return (
-    <section className="py-20 bg-background">
+    <section className="py-20 bg-gradient-to-b from-background to-muted/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
+          <div className="inline-block px-4 py-2 bg-primary/10 rounded-full mb-4">
+            <p className="text-sm font-semibold text-primary">Shop by Category</p>
+          </div>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Explore Our Categories</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover a wide variety of premium seafood, carefully selected and delivered fresh to your door
+            Discover a wide variety of premium seafood from trusted sellers, carefully selected and delivered fresh
           </p>
         </div>
 
@@ -71,7 +74,7 @@ export function CategoriesSection() {
             const Icon = category.icon
             return (
               <Link key={category.id} href={`/shop?category=${category.id}`}>
-                <Card className="group h-full p-6 hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-gradient-to-br from-card to-card/50 hover:from-primary/5 hover:to-secondary/5">
+                <Card className="group h-full p-6 hover:shadow-xl transition-all duration-300 cursor-pointer border-0 bg-white hover:-translate-y-1">
                   <div
                     className={`w-14 h-14 rounded-xl bg-gradient-to-br ${category.color} p-3 mb-4 group-hover:scale-110 transition-transform`}
                   >
@@ -79,7 +82,12 @@ export function CategoriesSection() {
                   </div>
                   <h3 className="text-xl font-bold text-foreground mb-2">{category.name}</h3>
                   <p className="text-sm text-muted-foreground mb-4">{category.description}</p>
-                  <p className="text-xs font-semibold text-primary">{category.count}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-primary">{category.count}</p>
+                    <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                      Shop now →
+                    </span>
+                  </div>
                 </Card>
               </Link>
             )

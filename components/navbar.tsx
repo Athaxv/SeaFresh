@@ -2,21 +2,40 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Search, ShoppingCart, User, Menu, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cart-context"
 
 export function Navbar() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [searchQuery, setSearchQuery] = useState("")
   const { itemCount } = useCart()
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/shop?search=${encodeURIComponent(searchQuery)}`)
+      setSearchQuery("")
+    }
+  }
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user")
+    if (userData) {
+      setUser(JSON.parse(userData))
+    }
   }, [])
 
   return (
@@ -50,14 +69,16 @@ export function Navbar() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center bg-muted rounded-full px-4 py-2 gap-2">
+            <form onSubmit={handleSearch} className="hidden sm:flex items-center bg-muted rounded-full px-4 py-2 gap-2">
               <Search className="w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search seafood..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent outline-none text-sm w-32 placeholder:text-muted-foreground"
               />
-            </div>
+            </form>
 
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative">
@@ -78,30 +99,49 @@ export function Navbar() {
                 <User className="w-5 h-5" />
               </button>
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-border overflow-hidden">
-                  <Link
-                    href="/login"
-                    className="block px-4 py-2 hover:bg-muted transition-colors"
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="block px-4 py-2 hover:bg-muted transition-colors"
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    Sign Up
-                  </Link>
-                  <div className="border-t border-border">
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 hover:bg-muted transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      My Account
-                    </Link>
-                  </div>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-border overflow-hidden z-50">
+                  {!user ? (
+                    <>
+                      <Link
+                        href="/login"
+                        className="block px-4 py-2 hover:bg-muted transition-colors"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/register"
+                        className="block px-4 py-2 hover:bg-muted transition-colors"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Sign Up
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href={user.role === "SELLER" ? "/seller/dashboard" : user.role === "ADMIN" ? "/admin" : "/dashboard"}
+                        className="block px-4 py-2 hover:bg-muted transition-colors"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        {user.role === "SELLER" ? "Seller Dashboard" : user.role === "ADMIN" ? "Admin Panel" : "My Dashboard"}
+                      </Link>
+                      <div className="border-t border-border">
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem("token")
+                            localStorage.removeItem("user")
+                            setUser(null)
+                            setUserMenuOpen(false)
+                            window.location.href = "/"
+                          }}
+                          className="block w-full text-left px-4 py-2 hover:bg-muted transition-colors text-red-600"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
