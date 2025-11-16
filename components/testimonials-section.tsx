@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Star } from "lucide-react"
+import { handleImageError } from "@/lib/image-fallback"
 
 const testimonials = [
   {
@@ -57,6 +58,7 @@ export function TestimonialsSection() {
                   src={testimonial.image || "/placeholder.svg"}
                   alt={testimonial.name}
                   className="w-10 h-10 rounded-full"
+                  onError={handleImageError}
                 />
                 <div>
                   <p className="font-semibold text-foreground">{testimonial.name}</p>

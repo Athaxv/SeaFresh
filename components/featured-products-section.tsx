@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Star, ShoppingCart } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
+import { handleImageError } from "@/lib/image-fallback"
 
 export function FeaturedProductsSection() {
   const { addItem } = useCart()
@@ -131,6 +132,7 @@ export function FeaturedProductsSection() {
                       src={product.image || "/placeholder.svg"}
                       alt={product.name}
                       className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
+                      onError={handleImageError}
                     />
                     {product.discount && (
                       <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">

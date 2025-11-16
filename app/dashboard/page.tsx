@@ -16,6 +16,7 @@ import { getAuthToken, logout as authLogout } from "@/lib/auth-client"
 import { formatPrice } from "@/lib/utils"
 import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
+import { handleImageError } from "@/lib/image-fallback"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -328,6 +329,7 @@ export default function DashboardPage() {
                           src={item.image || "/placeholder.svg"}
                           alt={item.name}
                           className="w-full h-full object-cover hover:scale-110 transition-transform"
+                          onError={handleImageError}
                         />
                       </div>
                       <div className="p-4">

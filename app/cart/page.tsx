@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/empty-state"
 import { ProductQuantitySelector } from "@/components/product-quantity-selector"
 import { TrustBadges } from "@/components/trust-badges"
 import type { Product } from "@/lib/types"
+import { handleImageError } from "@/lib/image-fallback"
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, getCartItemsWithProduct } = useCart()
@@ -120,6 +121,7 @@ export default function CartPage() {
                     src={item.product.image || "/placeholder.svg"}
                     alt={item.product.name}
                     className="w-24 h-24 object-cover rounded-lg"
+                    onError={handleImageError}
                   />
 
                   <div className="flex-1 flex flex-col justify-between">

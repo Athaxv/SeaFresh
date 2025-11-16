@@ -11,6 +11,7 @@ import { Star, ShoppingCart, Heart, Truck, Shield, Leaf } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
+import { handleImageError } from "@/lib/image-fallback"
 
 interface ProductDetailPageProps {
   params: {
@@ -120,6 +121,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
                 className="w-full h-full object-cover"
+                onError={handleImageError}
               />
               {product.discount && (
                 <div className="absolute top-4 left-4 px-4 py-2 bg-red-500 text-white font-bold rounded-full">
@@ -130,7 +132,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <div className="grid grid-cols-4 gap-2">
               {product.images.map((img: string, idx: number) => (
                 <div key={idx} className="bg-muted rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-primary">
-                  <img src={img || "/placeholder.svg"} alt={`View ${idx + 1}`} className="w-full h-20 object-cover" />
+                  <img src={img || "/placeholder.svg"} alt={`View ${idx + 1}`} className="w-full h-20 object-cover" onError={handleImageError} />
                 </div>
               ))}
             </div>

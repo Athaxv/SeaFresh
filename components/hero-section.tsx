@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Store, ShoppingBag, TrendingUp, Search, CheckCircle, Clock, Shield, Lock } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { handleImageError } from "@/lib/image-fallback"
 
 export function HeroSection() {
   const router = useRouter()
@@ -163,6 +164,7 @@ export function HeroSection() {
               src="/fresh-premium-seafood-prawns-fish-on-ice.jpg"
               alt="Fresh Seafood"
               className="relative w-full h-full object-cover rounded-3xl shadow-2xl group-hover:scale-[1.02] transition-transform duration-500"
+              onError={handleImageError}
             />
             
             {/* Floating Trust Badge */}

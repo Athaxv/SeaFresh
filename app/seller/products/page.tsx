@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Plus, Edit, Trash2, Search, Package } from "lucide-react"
 import Image from "next/image"
+import { getRandomSeafoodImage } from "@/lib/image-fallback"
 
 interface Product {
   id: string
@@ -25,6 +26,7 @@ export default function SellerProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [imageErrors, setImageErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     fetchProducts()
@@ -132,12 +134,29 @@ export default function SellerProductsPage() {
             {filteredProducts.map((product) => (
               <Card key={product.id} className="overflow-hidden">
                 <div className="relative h-48 w-full">
-                  <Image
-                    src={product.image || "/placeholder.jpg"}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                  />
+                  {imageErrors[product.id] ? (
+                    <img
+                      src={imageErrors[product.id]}
+                      alt={product.name}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.jpg"
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={product.image || "/placeholder.jpg"}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                      onError={() => {
+                        setImageErrors((prev) => ({
+                          ...prev,
+                          [product.id]: getRandomSeafoodImage(),
+                        }))
+                      }}
+                    />
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-1">{product.name}</h3>

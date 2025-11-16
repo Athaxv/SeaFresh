@@ -8,6 +8,7 @@ import type { Product } from "@/lib/types"
 import { formatPrice } from "@/lib/utils"
 import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
+import { handleImageError } from "@/lib/image-fallback"
 
 interface ProductCardProps {
   product: Product
@@ -56,6 +57,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
             src={product.image || "/placeholder.svg"}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            onError={handleImageError}
           />
 
           {/* Badges */}
